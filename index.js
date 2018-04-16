@@ -1,1 +1,2 @@
-require('./server/server');
+// require('./server/server');
+console.log(111);
