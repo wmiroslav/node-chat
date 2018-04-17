@@ -4,23 +4,15 @@
         <meta charset="utf-8">
     </head>
     <body>
-
-        <ul id="messages"></ul>
-
-        <form id="form">
-            <input id="message" name="message" type="text" placeholder="Enter a message..."/>
-            <button>send</button>
+        
+        <form action="./chat.html">
+            <div>
+                <input type="text" name="name" autofocus autocomplete="off" placeholder="Enter your name"/>
+            </div>
+            <div>
+                <input type="text" name="room" autocomplete="off" placeholder="Enter room name"/>
+            </div>
+            <button>JOIN</button>
         </form>
-
-        <script
-  src="https://code.jquery.com/jquery-3.3.1.min.js"
-  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
-  crossorigin="anonymous"></script>
-        <script src="/socket.io/socket.io.js"></script>
-        <script src="/js/index.js">
-        </script>
     </body>
 </html>
-
-
-

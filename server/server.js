@@ -3,7 +3,7 @@ const path = require('path');
 const express = require('express');   
 const socketIO = require('socket.io');
 const http = require('http');
-
+const validateString = require('./utils/validation');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,18 +20,53 @@ var io = socketIO(server);
 io.on('connection', (socket) => {
     console.log('new user connected');
 
-    // socket.emit('welcome', "Welcome to the chat");
-    
-    // socket.broadcast.emit('newUser', "New user is logged in");
+    // join to the room
+    socket.on('join', (params, callback) => {
+        if(!params) {
+            callback('Name and room are required');
+            return;
+        }
+        if(!validateString(params.name) || !validateString(params.room)) {
+            callback('Name and room are required');
+            return;
+        }
 
-    socket.on('createMessage', (message, callback) => {
-        console.log('createMessage', message);
-        io.emit('newMessage', {
-            from: message.from,
-            text: message.text
+        socket.join(params.room); //socket.leave(params.room)
+        // io.emit -> io.to(params.room).emit(...)
+        // socket.broadcast.emit -> socket.broadcast.to(params.room).emit(...)
+        // socket.emit -> specificno za jednog usera, pa nema tu sta "to()"
+        
+        // send init message to current user
+        socket.emit('newMessage', {
+            from: 'Admin',
+            text: params.name + ', welcome to ' + params.room + ' chat!'
         })
-        callback('response from server');
-    })
+        // send to all other users
+        socket.broadcast.to(params.room).emit('newMessage', {
+            from: 'Admin',
+            text: params.name + " joined to our " + params.room + " room!"
+        });
+        
+
+        socket.on('createMessage', (message, callback) => {
+            console.log('createMessage', message);
+            io.to(params.room).emit('newMessage', {
+                from: params.name,
+                text: message.text
+            })
+            callback('response from server');
+        })
+        
+        socket.on('leave', ()=>{
+            socket.leave(params.room);
+        })
+        
+        
+        
+        callback();
+    });
+
+
 });
 
 
