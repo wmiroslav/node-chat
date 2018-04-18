@@ -7,7 +7,6 @@ socket.on('connect', () => {
             window.location.href = "/";
             return;
         }
-        console.log('success joined!');
     });
 })
 
@@ -16,6 +15,16 @@ socket.on('newMessage', (message) => {
     var li = $('<li></li>');
     li.text(message.from + ": " + message.text);
     $('#messages').append(li);
+})
+
+socket.on('updateUserList', (users) => {
+    console.log(users);
+    $('#online').empty();
+    for(var i = 0, len = users.length; i < len; i++) {
+        var li = $('<li></li>');
+        li.text(users[i]);
+        $('#online').append(li);
+    }
 })
 
 
@@ -40,7 +49,7 @@ $(document).ready(function(){
         var value = message.val().trim();
         if (value) {
             socket.emit('createMessage', {
-                from: "User",
+                // from: "User",
                 text: value  
             }, function(response) {
                 message.val("");

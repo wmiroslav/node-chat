@@ -11,11 +11,12 @@ const server = http.createServer(app);
 const publicPath = path.join(__dirname, '..', 'public')
 app.use(express.static(publicPath));
 
+const Users = require('./utils/users');
 
 
 
  
-
+var users = new Users();
 var io = socketIO(server);
 io.on('connection', (socket) => {
     console.log('new user connected');
@@ -31,36 +32,64 @@ io.on('connection', (socket) => {
             return;
         }
 
-        socket.join(params.room); //socket.leave(params.room)
-        // io.emit -> io.to(params.room).emit(...)
-        // socket.broadcast.emit -> socket.broadcast.to(params.room).emit(...)
-        // socket.emit -> specificno za jednog usera, pa nema tu sta "to()"
+        socket.join(params.room);
+        users.removeUser(socket.id); // remove this user if it's already in the room
+        users.addUser(socket.id, params.name, params.room);
+        io.to(params.room).emit('updateUserList', users.getUserList(params.room))
+
         
-        // send init message to current user
+        // send init Welcome message to current user
         socket.emit('newMessage', {
             from: 'Admin',
             text: params.name + ', welcome to ' + params.room + ' chat!'
         })
-        // send to all other users
+        // send to all other users that new user is in room
         socket.broadcast.to(params.room).emit('newMessage', {
             from: 'Admin',
             text: params.name + " joined to our " + params.room + " room!"
         });
         
-
+        // any user create a message
         socket.on('createMessage', (message, callback) => {
-            console.log('createMessage', message);
-            io.to(params.room).emit('newMessage', {
-                from: params.name,
-                text: message.text
-            })
+            var user = users.getUser(socket.id);
+            if(user && validateString(message.text)) {
+                io.to(user.room).emit('newMessage', {
+                    from: user.name,
+                    text: message.text
+                })
+            }
+
+            // io.to(params.room).emit('newMessage', {
+            //     from: params.name,
+            //     text: message.text
+            // })
             callback('response from server');
         })
         
-        socket.on('leave', ()=>{
-            socket.leave(params.room);
+
+
+        // remove user
+        // socket.on('leave', ()=>{
+        //     var user = users.removeUser(socket.id);
+        //     if (user) {
+        //         io.to(user.room).emit('updateUserList', users.getUserList(user.room));
+        //         io.to(user.room).emit('newMessage', {
+        //             from: 'Admin',
+        //             text: user.name + ' has left the room.'
+        //         });
+        //     }
+        //     socket.leave(params.room);
+        // })
+        socket.on('disconnect', () => {
+            var user = users.removeUser(socket.id);
+            if (user) {
+                io.to(user.room).emit('updateUserList', users.getUserList(user.room));
+                io.to(user.room).emit('newMessage', {
+                    from: 'Admin',
+                    text: user.name + ' has left the room.'
+                });
+            }
         })
-        
         
         
         callback();
